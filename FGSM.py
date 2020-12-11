@@ -3,10 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-epsilons = [0, .05, .1, .15, .2, .25, .3]
+#epsilons = [0, .05, .1, .15, .2, .25, .3]
 # pretrained_model = "data/lenet_mnist_model.pth"
-use_cuda=True
-test_loader = torch.utils.data.DataLoader(image_datasets['test'], batch_size=1,shuffle=True, num_workers=4)
+#use_cuda=True
+#test_loader = torch.utils.data.DataLoader(image_datasets['test'], batch_size=1,shuffle=True, num_workers=4)
 
 def fgsm_attack(image, epsilon, data_grad):
     # Collect the element-wise sign of the data gradient
@@ -14,7 +14,13 @@ def fgsm_attack(image, epsilon, data_grad):
     # Create the perturbed image by adjusting each pixel of the input image
     perturbed_image = image + epsilon*sign_data_grad
     # Adding clipping to maintain [0,1] range
-    perturbed_image = torch.clamp(perturbed_image, 0, 1)
+
+    for i in range(perturbed_image.shape[0]):
+        perturbed_image[i] = (perturbed_image[i] - perturbed_image[i].min())
+        perturbed_image[i] = perturbed_image[i]/perturbed_image[i].max()
+
+    # perturbed_image = torch.clamp(perturbed_image, 0, 1)
+
     # Return the perturbed image
     return perturbed_image
 
@@ -78,44 +84,44 @@ def fsgm_test( model, device, test_loader, epsilon ):
 
     # Return the accuracy and an adversarial example
     return final_acc, adv_examples#%%
-
-epsilons = [0, .05, .1, .15, .2, .25, .3]
-# pretrained_model = "data/lenet_mnist_model.pth"
-use_cuda=True
-
-#%%
-
-accuracies = []
-examples = []
-
-# Run test for each epsilon
-for eps in epsilons:
-    acc, ex = test(model_ft, device, test_loader, eps)
-    accuracies.append(acc)
-    examples.append(ex)
-
-
-plt.figure(figsize=(5,5))
-plt.plot(epsilons, accuracies, "*-")
-plt.yticks(np.arange(0, 1.1, step=0.1))
-plt.xticks(np.arange(0, .35, step=0.05))
-plt.title("Accuracy vs Epsilon")
-plt.xlabel("Epsilon")
-plt.ylabel("Accuracy")
-plt.show()
-
-cnt = 0
-plt.figure(figsize=(8,10))
-for i in range(len(epsilons)):
-    for j in range(len(examples[i])):
-        cnt += 1
-        plt.subplot(len(epsilons),len(examples[0]),cnt)
-        plt.xticks([], [])
-        plt.yticks([], [])
-        if j == 0:
-            plt.ylabel("Eps: {}".format(epsilons[i]), fontsize=14)
-        orig,adv,ex = examples[i][j]
-        plt.title("{} -> {}".format(orig, adv))
-        plt.imshow(ex.transpose(1,2,0))
-plt.tight_layout()
-plt.show()
+#
+# epsilons = [0, .05, .1, .15, .2, .25, .3]
+# # pretrained_model = "data/lenet_mnist_model.pth"
+# use_cuda=True
+#
+# #%%
+#
+# accuracies = []
+# examples = []
+#
+# # Run test for each epsilon
+# for eps in epsilons:
+#     acc, ex = test(model_ft, device, test_loader, eps)
+#     accuracies.append(acc)
+#     examples.append(ex)
+#
+#
+# plt.figure(figsize=(5,5))
+# plt.plot(epsilons, accuracies, "*-")
+# plt.yticks(np.arange(0, 1.1, step=0.1))
+# plt.xticks(np.arange(0, .35, step=0.05))
+# plt.title("Accuracy vs Epsilon")
+# plt.xlabel("Epsilon")
+# plt.ylabel("Accuracy")
+# plt.show()
+#
+# cnt = 0
+# plt.figure(figsize=(8,10))
+# for i in range(len(epsilons)):
+#     for j in range(len(examples[i])):
+#         cnt += 1
+#         plt.subplot(len(epsilons),len(examples[0]),cnt)
+#         plt.xticks([], [])
+#         plt.yticks([], [])
+#         if j == 0:
+#             plt.ylabel("Eps: {}".format(epsilons[i]), fontsize=14)
+#         orig,adv,ex = examples[i][j]
+#         plt.title("{} -> {}".format(orig, adv))
+#         plt.imshow(ex.transpose(1,2,0))
+# plt.tight_layout()
+# plt.show()

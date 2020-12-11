@@ -13,6 +13,7 @@ from torchvision import datasets, models, transforms
 import time
 import os
 import copy
+from FGSM import fgsm_attack
 
 def train_model(model, criterion, optimizer, scheduler, image_datasets,dataloaders ,num_epochs=25):
     since = time.time()
@@ -129,23 +130,35 @@ def train_model_with_FGSM(model, criterion, optimizer, scheduler, image_datasets
                 # 순전파
                 # 학습 시에만 연산 기록을 추적
                 with torch.set_grad_enabled(phase == 'train'):
+                    inputs.requires_grad = True
                     outputs = model(inputs)
                     _, preds = torch.max(outputs, 1)
                     normal_loss = criterion(outputs, labels)
 
-                    
-
-
-                    FGSM_loss = criterion(outputs, labels)
-                    loss = normal_loss + FGSM_loss
 
                     # 학습 단계인 경우 역전파 + 최적화
                     if phase == 'train':
-                        loss.backward()
+                        normal_loss.backward()
+
+                        optimizer.step()
+                        optimizer.zero_grad()
+
+                        data_grad = inputs.grad
+                        fgsm_inputs = torch.tensor(inputs.to('cpu').detach().numpy())
+                        fgsm_inputs = fgsm_inputs.to(device)
+
+                        fgsm_inputs = fgsm_attack(fgsm_inputs, 0.25, data_grad)
+                        # fgsm_inputs.requires_grad = True
+                        fgsm_outputs = model(fgsm_inputs)
+                        _, fgsm_preds = torch.max(fgsm_outputs, 1)
+                        fgsm_loss = criterion(fgsm_outputs, labels)
+                        fgsm_loss.backward()
+
                         optimizer.step()
 
+
                 # 통계
-                running_loss += loss.item() * inputs.size(0)
+                running_loss += normal_loss.item() * inputs.size(0) + fgsm_loss.item()  * inputs.size(0)
                 running_corrects += torch.sum(preds == labels.data)
             if phase == 'train':
                 scheduler.step()
@@ -155,6 +168,8 @@ def train_model_with_FGSM(model, criterion, optimizer, scheduler, image_datasets
 
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(
                 phase, epoch_loss, epoch_acc))
+
+            torch.save(model,"data/FGSM_resnet50_CXR_"+str(epoch)+".pth")
 
             # 모델을 깊은 복사(deep copy)함
             if phase == 'test' and epoch_acc > best_acc:
