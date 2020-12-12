@@ -99,6 +99,7 @@ def imshow(inp, title=None):
 
 def train_model_with_FGSM(model, criterion, optimizer, scheduler, image_datasets,dataloaders ,num_epochs=25):
     since = time.time()
+    a = 0.5
     dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'test']}
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -133,7 +134,7 @@ def train_model_with_FGSM(model, criterion, optimizer, scheduler, image_datasets
                     inputs.requires_grad = True
                     outputs = model(inputs)
                     _, preds = torch.max(outputs, 1)
-                    normal_loss = criterion(outputs, labels)
+                    normal_loss = criterion(outputs, labels) * a
 
 
                     # 학습 단계인 경우 역전파 + 최적화
@@ -144,14 +145,14 @@ def train_model_with_FGSM(model, criterion, optimizer, scheduler, image_datasets
                         optimizer.zero_grad()
 
                         data_grad = inputs.grad
-                        fgsm_inputs = torch.tensor(inputs.to('cpu').detach().numpy())
-                        fgsm_inputs = fgsm_inputs.to(device)
+                        # fgsm_inputs = torch.tensor(inputs.to('cpu').detach().numpy())
+                        # fgsm_inputs = fgsm_inputs.to(device)
 
                         fgsm_inputs = fgsm_attack(fgsm_inputs, 0.25, data_grad)
                         # fgsm_inputs.requires_grad = True
-                        fgsm_outputs = model(fgsm_inputs)
+                        fgsm_outputs = model(fgsm_inputs) 
                         _, fgsm_preds = torch.max(fgsm_outputs, 1)
-                        fgsm_loss = criterion(fgsm_outputs, labels)
+                        fgsm_loss = criterion(fgsm_outputs, labels) (1-a)
                         fgsm_loss.backward()
 
                         optimizer.step()

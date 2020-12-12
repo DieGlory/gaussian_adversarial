@@ -15,11 +15,11 @@ def fgsm_attack(image, epsilon, data_grad):
     perturbed_image = image + epsilon*sign_data_grad
     # Adding clipping to maintain [0,1] range
 
-    for i in range(perturbed_image.shape[0]):
-        perturbed_image[i] = (perturbed_image[i] - perturbed_image[i].min())
-        perturbed_image[i] = perturbed_image[i]/perturbed_image[i].max()
+    # for i in range(perturbed_image.shape[0]):
+    #     perturbed_image[i] = (perturbed_image[i] - perturbed_image[i].min())
+    #     perturbed_image[i] = perturbed_image[i]/perturbed_image[i].max()
 
-    # perturbed_image = torch.clamp(perturbed_image, 0, 1)
+    perturbed_image = torch.clamp(perturbed_image, 0, 1)
 
     # Return the perturbed image
     return perturbed_image
